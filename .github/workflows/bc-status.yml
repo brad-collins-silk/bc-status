@@ -1,0 +1,41 @@
+name: BigCommerce status to Slack
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (GitHub may run a few minutes late)
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Send a sample message using the latest incident"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bc-status
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check status page
+        run: node bc-status-to-slack.mjs ${{ inputs.test && '--test' || '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          COMPONENT_FILTER: ${{ vars.COMPONENT_FILTER }}
+      - name: Save state
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f state.json ]; then
+            git add state.json
+            git diff --cached --quiet || (git commit -m "Update status state [skip ci]" && git push)
+          fi
