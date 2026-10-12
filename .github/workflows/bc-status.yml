@@ -1,9 +1,7 @@
 name: BigCommerce status to Slack
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"   # every 5 minutes (GitHub may run a few minutes late)
-  workflow_dispatch:
+  workflow_dispatch:   # triggered every 5 minutes by cron-job.org
     inputs:
       test:
         description: "Send a sample message using the latest incident"
